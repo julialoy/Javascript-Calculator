@@ -93,6 +93,7 @@ class App extends Component {
   handleClearDisplay = () => {
     this.setState({currentDisplay: "0"});
     this.setState({equation: []});
+    this.currInputIndex = 0;
   }
 
   handleBackspace = () => {
@@ -109,6 +110,7 @@ class App extends Component {
   }
 
   buildEquationPart = (userInput) => {
+    console.log("INDEX: ", this.currInputIndex);
     if (this.state.equation.length === 0) {
       const newOperand = parseFloat(this.state.currentDisplay);
       const newOperation = userInput;
@@ -118,20 +120,28 @@ class App extends Component {
       }
       const newEquationState = [newEquationPiece];
       this.setState({equation: newEquationState});
+      this.currInputIndex++;
     } else {
       const lastOperation = this.state.equation[this.currInputIndex-1].operator;
       const lastOperationIndex = this.state.currentDisplay.lastIndexOf(lastOperation);
       const newOperand = parseFloat(this.state.currentDisplay.slice(lastOperationIndex+1));
       const newOperation = userInput;
-      let newEquationPiece = {
-        operand: newOperand,
-        operator: newOperation
+      if (isNaN(newOperand)) {
+        // Ignores new equation part if there is no valid operand
+        console.log("OPERAND IS NOT A VALID NUMBER: ", newOperand);
+        let prevEquationState = this.state.equation.slice();
+        this.setState({equation: prevEquationState});
+      } else {
+        let newEquationPiece = {
+          operand: newOperand,
+          operator: newOperation
+        }
+        let prevEquationState = this.state.equation.slice();
+        prevEquationState.push(newEquationPiece);
+        this.setState({equation: prevEquationState});
+        this.currInputIndex++;
       }
-      let prevEquationState = this.state.equation.slice();
-      prevEquationState.push(newEquationPiece);
-      this.setState({equation: prevEquationState});
     }
-    this.currInputIndex++;
     this.currDecimals = 0;
   }
 
@@ -169,12 +179,15 @@ class App extends Component {
   handleUserInput = (evt) => {
     const targetId = evt.target.id;
     let targetContent = evt.target.firstChild.nodeValue;
+    console.log("CURRENT DISPLAY: ", this.state.currentDisplay);
+    console.log("NEW INPUT: ", targetContent);
     if (targetId === "backspace" || targetId === "clear" || targetId === "equals") {
       if (targetId === "clear") {
         this.handleClearDisplay();
       } else if (targetId === "backspace") {
         this.handleBackspace();
       } else if (targetId === "equals") {
+        
         this.handleEvaluate();
       }
     } else if (targetContent === "0" || targetContent === 0) {
@@ -194,6 +207,7 @@ class App extends Component {
   }
 
   render() {
+    console.log(this.state.equation);
     return (
       <Container id="calculator">
         <Display 
