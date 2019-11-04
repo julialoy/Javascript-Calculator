@@ -88,6 +88,7 @@ class App extends Component {
   };
 
   currInputIndex =  0;
+  currDecimals = 0;
 
   handleClearDisplay = () => {
     this.setState({currentDisplay: "0"});
@@ -131,6 +132,7 @@ class App extends Component {
       this.setState({equation: prevEquationState});
     }
     this.currInputIndex++;
+    this.currDecimals = 0;
   }
 
   concatUserInput = (inpt) => {
@@ -153,6 +155,12 @@ class App extends Component {
       const newDisplay = prevInput.concat('', newInput);
       this.setState({currentDisplay: newDisplay});
     } else {
+      if (newInput === ".") {
+        this.currDecimals++;
+          if (this.currDecimals > 1) {
+            newInput = "";
+          }
+      }
       const newDisplay = prevInput.concat('', newInput);
       this.setState({currentDisplay: newDisplay});
     }
