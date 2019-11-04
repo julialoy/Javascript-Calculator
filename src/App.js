@@ -83,31 +83,78 @@ class App extends Component {
         id: "equals"
       },
     ],
-    currentInput: "0"
+    currentDisplay: "0",
+    equation: []
   };
 
+  currInputIndex =  0;
+
   handleClearDisplay = () => {
-    this.setState({currentInput: "0"});
+    this.setState({currentDisplay: "0"});
+    this.setState({equation: []});
   }
 
   handleBackspace = () => {
-    let backOne = this.state.currentInput.slice(0, -1);
-    if (backOne.length < 1) {
-      backOne = "0";
+    let backOneDisplay = this.state.currentDisplay.slice(0, -1);
+    if (backOneDisplay.length < 1) {
+      backOneDisplay = "0";
     }
-    this.setState({currentInput: backOne});
+    this.setState({currentDisplay: backOneDisplay});
+  }
+
+  handleEvaluate = () => {
+    this.buildEquationPart('=');
+    console.log("PLACEHOLDER FOR EQUALS");
+  }
+
+  buildEquationPart = (userInput) => {
+    if (this.state.equation.length === 0) {
+      const newOperand = parseFloat(this.state.currentDisplay);
+      const newOperation = userInput;
+      let newEquationPiece = {
+        operand: newOperand,
+        operator: newOperation
+      }
+      const newEquationState = [newEquationPiece];
+      this.setState({equation: newEquationState});
+    } else {
+      const lastOperation = this.state.equation[this.currInputIndex-1].operator;
+      const lastOperationIndex = this.state.currentDisplay.lastIndexOf(lastOperation);
+      const newOperand = parseFloat(this.state.currentDisplay.slice(lastOperationIndex+1));
+      const newOperation = userInput;
+      let newEquationPiece = {
+        operand: newOperand,
+        operator: newOperation
+      }
+      let prevEquationState = this.state.equation.slice();
+      prevEquationState.push(newEquationPiece);
+      this.setState({equation: prevEquationState});
+    }
+    this.currInputIndex++;
   }
 
   concatUserInput = (inpt) => {
-    const prevInput = this.state.currentInput.toString();
+    let prevInput = this.state.currentDisplay.toString();
     let newInput = inpt.toString();
     if (prevInput.length === 1 && prevInput === "0" && newInput === "0") {
-      this.setState({currentInput: "0"});
+      //Keeps display at one 0 if user is entering multiple 0s
+      this.setState({currentDisplay: "0"});
+    }
+    else if (prevInput.length === 1 && prevInput === "0" && OPERATIONS.includes(newInput)) {
+      //Doesn't allow first user input to be an operator
+      this.setState({currentDisplay: "0"});
     } else if (prevInput.length === 1 && prevInput === "0" && newInput !== "0") {
-      this.setState({currentInput: newInput});
+      //Removes initial 0 when user starts entering numbers
+      this.setState({currentDisplay: newInput});
+    } else if (OPERATIONS.includes(prevInput.slice(-2, -1)) && prevInput.slice(-1) === "0" && !OPERATIONS.includes(newInput)) {
+      //Removes initial 0 if user continues to type a number. EXAMPLE: 12 + 01 becomes 12 + 1
+      //Keeps a zero if an operator immediately follows. EXAMPLE: 12 + 0 + 1, the 0 is retained
+      prevInput = prevInput.slice(0, -1);
+      const newDisplay = prevInput.concat('', newInput);
+      this.setState({currentDisplay: newDisplay});
     } else {
       const newDisplay = prevInput.concat('', newInput);
-      this.setState({currentInput: newDisplay});
+      this.setState({currentDisplay: newDisplay});
     }
   }
 
@@ -115,18 +162,23 @@ class App extends Component {
     const targetId = evt.target.id;
     let targetContent = evt.target.firstChild.nodeValue;
     if (targetId === "backspace" || targetId === "clear" || targetId === "equals") {
-      console.log("PLACEHOLDER");
       if (targetId === "clear") {
         this.handleClearDisplay();
       } else if (targetId === "backspace") {
         this.handleBackspace();
+      } else if (targetId === "equals") {
+        this.handleEvaluate();
       }
     } else if (targetContent === "0" || targetContent === 0) {
-      if (OPERATIONS.includes(this.state.currentInput.slice(-1))) {
+      if (OPERATIONS.includes(this.state.currentDisplay.slice(-1))) {
+        //Strips initial 0s
         while (targetContent.length > 1 && targetContent[0] === "0") {
           targetContent = targetContent.slice(1);
         }
       }
+      this.concatUserInput(targetContent);
+    } else if (OPERATIONS.includes(targetContent)) {
+      this.buildEquationPart(targetContent);
       this.concatUserInput(targetContent);
     } else {
       this.concatUserInput(targetContent);
@@ -137,7 +189,7 @@ class App extends Component {
     return (
       <Container id="calculator">
         <Display 
-          userInput={this.state.currentInput}
+          userInput={this.state.currentDisplay}
         />
         <Row className="calc-row" id="calc-row-1">
         {this.state.buttons.filter( (btn, index) => index < 3).map( (btn, index) => 
