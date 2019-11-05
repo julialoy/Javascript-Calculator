@@ -94,6 +94,7 @@ class App extends Component {
     this.setState({currentDisplay: "0"});
     this.setState({equation: []});
     this.currInputIndex = 0;
+    this.currDecimals = 0;
   }
 
   handleBackspace = () => {
@@ -208,6 +209,7 @@ class App extends Component {
 
   render() {
     console.log(this.state.equation);
+    console.log(this.state.currentDisplay);
     return (
       <Container id="calculator">
         <Display 
