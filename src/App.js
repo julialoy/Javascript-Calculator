@@ -158,6 +158,9 @@ class App extends Component {
     if (operator === 'x') {
       return operand1 * operand2;
     } else if (operator === '/') {
+      if (operand2 === 0) {
+        return "No division by 0";
+      }
       return operand1 / operand2;
     } else if (operator === '+') {
       return operand1 + operand2;
@@ -190,29 +193,50 @@ class App extends Component {
         const operator = this.equationPieces[i].operator;
         const operandTwo = this.equationPieces[i+1].operand;
         const tempAns = this.evaluate(operandOne, operator, operandTwo);
-        evalArray.push(tempAns);
-        evalArray.push(this.equationPieces[i+1].operator);
-        i++;
+        if (tempAns === "No division by 0") {
+          evalArray = [];
+          answer = null;
+          this.setState({currentDisplay: tempAns});
+          this.equationPieces = [];
+          this.currInputIndex = 0;
+          this.currDecimals = 0;
+          break;
+        } else if (tempAns === Infinity) {
+          evalArray = [];
+          answer = null;
+          this.setState({currentDisplay: "Bad expression"});
+          this.equationPieces = [];
+          this.currInputIndex = 0;
+          this.currDecimals = 0;
+          break;
+        } else {
+          evalArray.push(tempAns);
+          evalArray.push(this.equationPieces[i+1].operator);
+          i++;
+        }
       } else {
         evalArray.push(this.equationPieces[i].operand);
         evalArray.push(this.equationPieces[i].operator);
       }
     }
-    if (evalArray.length === 2 || evalArray[1] === '=') {
-      answer = evalArray[0];
-    } else {
-      answer = this.evaluate(evalArray[0], evalArray[1], evalArray[2]);
-    }
-
-    if (evalArray.length > 4) {
-      for (let j = 3; j < evalArray.length-1; j += 2) {
-        answer = this.evaluate(answer, evalArray[j], evalArray[j+1]);
+    
+    if (evalArray.length > 0) {
+      if (evalArray.length === 2 || evalArray[1] === '=') {
+        answer = evalArray[0];
+      } else {
+        answer = this.evaluate(evalArray[0], evalArray[1], evalArray[2]);
       }
+
+      if (evalArray.length > 4) {
+        for (let j = 3; j < evalArray.length-1; j += 2) {
+          answer = this.evaluate(answer, evalArray[j], evalArray[j+1]);
+        }
+      }
+      // Decimals intentionally not reset so that user cannot create a number with more than one decimal point
+      this.equationPieces = [];
+      this.currInputIndex = 0;
+      this.setState({currentDisplay: answer});
     }
-    // Decimals intentionally not reset so that user cannot create a number with more than one decimal point
-    this.equationPieces = [];
-    this.currInputIndex = 0;
-    this.setState({currentDisplay: answer});
   }
 
   handleUserInput = (evt) => {
