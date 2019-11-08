@@ -239,9 +239,7 @@ class App extends Component {
     }
   }
 
-  handleUserInput = (evt) => {
-    const targetId = evt.target.id;
-    let targetContent = evt.target.firstChild.nodeValue;
+  parseUserInput = (targetId, targetContent) => {
     if (targetId === "backspace" || targetId === "clear" || targetId === "equals") {
       if (targetId === "clear") {
         this.handleClearDisplay();
@@ -266,6 +264,10 @@ class App extends Component {
         this.concatUserInput(targetContent);
       } else if (OPERATIONS.includes(this.state.currentDisplay[-1]) && targetContent === '-') {
         this.concatUserInput(targetContent);
+      } else if (this.state.currentDisplay.length === 1 && this.state.currentDisplay === '-' && OPERATIONS.includes(targetContent)) {
+        // If first user inputs are a minus sign followed by another operator, ignore both and set display back to 0
+        this.setState({currentDisplay: '0'});
+        this.currInputIndex = 0;
       } else {
         this.buildEquationPart(targetContent);
         this.concatUserInput(targetContent);
@@ -275,9 +277,13 @@ class App extends Component {
     } 
   }
 
+  handleUserInput = (evt) => {
+    this.parseUserInput(evt.target.id, evt.target.firstChild.nodeValue);
+  }
+
   render() {
     return (
-      <Container id="calculator">
+      <Container id="calculator" onKeyPress={this.handleKeyPress}>
         <Display 
           userInput={this.state.currentDisplay}
         />
