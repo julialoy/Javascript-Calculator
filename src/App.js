@@ -83,16 +83,31 @@ class App extends Component {
         id: "equals"
       },
     ],
-    currentDisplay: "0"
+    currentDisplay: "0",
+    totalDisplay: "0"
   };
 
   currInputIndex =  0;
   currDecimals = 0;
   equationPieces = [];
 
+  checkDisplayLength = (displayString) => {
+    if (displayString.length > 21 && this.state.currentDisplay === this.state.totalDisplay) {
+      let shortDisplay = "..." + displayString[displayString.length-1];
+      return shortDisplay;
+    } else if (displayString.length > 21 && this.state.currentDisplay !== this.state.totalDisplay) {
+      let shortDisplay = "..." + displayString.slice(21);
+      if (shortDisplay.length > 21) {
+        shortDisplay = "..." + shortDisplay.slice(21);
+      }
+      return shortDisplay;
+    }
+    return displayString;
+  }
+
   buildEquationPart = (userInput) => {
     if (this.equationPieces.length === 0) {
-      const newOperand = parseFloat(this.state.currentDisplay);
+      const newOperand = parseFloat(this.state.totalDisplay);
       const newOperation = userInput;
       const newEquationPiece = {
         operand: newOperand,
@@ -102,8 +117,8 @@ class App extends Component {
       this.currInputIndex++;
     } else {
       const lastOperation = this.equationPieces[this.currInputIndex-1].operator;
-      const lastOperationIndex = this.state.currentDisplay.lastIndexOf(lastOperation);
-      const newOperand = parseFloat(this.state.currentDisplay.slice(lastOperationIndex+1));
+      const lastOperationIndex = this.state.totalDisplay.lastIndexOf(lastOperation);
+      const newOperand = parseFloat(this.state.totalDisplay.slice(lastOperationIndex+1));
       const newOperation = userInput;
       if (isNaN(newOperand)) {
         // If two operators are entered in a row and one is NOT subtraction/minus sign, ignore the first operator
@@ -123,23 +138,37 @@ class App extends Component {
   }
 
   concatUserInput = (inpt) => {
-    let prevInput = this.state.currentDisplay.toString();
+    let prevInput = this.state.totalDisplay.toString();
     let newInput = inpt.toString();
     if (prevInput.length === 1 && prevInput === "0" && newInput === "0") {
       //Keeps display at one 0 if user is entering multiple 0s
-      this.setState({currentDisplay: "0"});
+      this.setState({
+        currentDisplay: "0",
+        totalDisplay: "0"
+      });
     } else if (prevInput.length === 1 && prevInput === "0" && OPERATIONS.includes(newInput) && (newInput !== '-')) {
       //Doesn't allow first user input to be an operator, except for a minus sign to denote a negative number
-      this.setState({currentDisplay: "0"});
+      this.setState({
+        currentDisplay: "0",
+        totalDisplay: "0"
+      });
     } else if (prevInput.length === 1 && prevInput === "0" && newInput !== "0") {
       //Removes initial 0 when user starts entering numbers
-      this.setState({currentDisplay: newInput});
+      this.setState({
+        currentDisplay: newInput,
+        totalDisplay: newInput
+      });
     } else if (OPERATIONS.includes(prevInput.slice(-2, -1)) && prevInput.slice(-1) === "0" && !OPERATIONS.includes(newInput)) {
       //Removes initial 0 if user continues to type a number. EXAMPLE: 12 + 01 becomes 12 + 1
       //Keeps a zero if an operator immediately follows. EXAMPLE: 12 + 0 + 1, the 0 is retained
       prevInput = prevInput.slice(0, -1);
-      const newDisplay = prevInput.concat('', newInput);
-      this.setState({currentDisplay: newDisplay});
+      const newTotalDisplay = prevInput.concat('', newInput);
+      const newCurrentDisplay = this.checkDisplayLength(newTotalDisplay);
+      this.setState({
+        currentDisplay: newCurrentDisplay,
+        totalDisplay: newTotalDisplay
+      });
+      // this.setState({totalDisplay: newTotalDisplay});
     } else {
       if (newInput === ".") {
         //Checks that Decimals are only allowed to have one decimal point
@@ -149,8 +178,12 @@ class App extends Component {
             newInput = "";
           }
       }
-      const newDisplay = prevInput.concat('', newInput);
-      this.setState({currentDisplay: newDisplay});
+      const newTotalDisplay = prevInput.concat('', newInput);
+      const newCurrentDisplay = this.checkDisplayLength(newTotalDisplay);
+      this.setState({
+        currentDisplay: newCurrentDisplay,
+        totalDisplay: newTotalDisplay
+      });
     }
   }
 
@@ -171,6 +204,7 @@ class App extends Component {
 
   handleClearDisplay = () => {
     this.setState({currentDisplay: "0"});
+    this.setState({totalDisplay: "0"});
     this.equationPieces = [];
     this.currInputIndex = 0;
     this.currDecimals = 0;
@@ -178,10 +212,17 @@ class App extends Component {
 
   handleBackspace = () => {
     let backOneDisplay = this.state.currentDisplay.slice(0, -1);
-    if (backOneDisplay.length < 1) {
+    let backOneTotalDisplay = this.state.totalDisplay.slice(0, -1);
+    if (backOneTotalDisplay.length < 1) {
+      backOneTotalDisplay = "0";
       backOneDisplay = "0";
     }
+
+    if (backOneTotalDisplay.length <= 21 && backOneDisplay !== backOneTotalDisplay) {
+      backOneDisplay = backOneTotalDisplay;
+    }
     this.setState({currentDisplay: backOneDisplay});
+    this.setState({totalDisplay: backOneTotalDisplay});
   }
 
   handleEvaluate = () => {
@@ -197,6 +238,7 @@ class App extends Component {
           evalArray = [];
           answer = null;
           this.setState({currentDisplay: tempAns});
+          this.setState({totalDisplay: tempAns});
           this.equationPieces = [];
           this.currInputIndex = 0;
           this.currDecimals = 0;
@@ -205,6 +247,7 @@ class App extends Component {
           evalArray = [];
           answer = null;
           this.setState({currentDisplay: "Bad expression"});
+          this.setState({totalDisplay: "Bad expression"});
           this.equationPieces = [];
           this.currInputIndex = 0;
           this.currDecimals = 0;
@@ -236,6 +279,7 @@ class App extends Component {
       this.equationPieces = [];
       this.currInputIndex = 0;
       this.setState({currentDisplay: answer});
+      this.setState({totalDisplay: answer});
     }
   }
 
@@ -250,7 +294,7 @@ class App extends Component {
         this.handleEvaluate();
       }
     } else if (targetContent === "0" || targetContent === 0) {
-      if (OPERATIONS.includes(this.state.currentDisplay.slice(-1))) {
+      if (OPERATIONS.includes(this.state.totalDisplay.slice(-1))) {
         //Strips initial 0s
         while (targetContent.length > 1 && targetContent[0] === "0") {
           targetContent = targetContent.slice(1);
@@ -260,13 +304,17 @@ class App extends Component {
     } else if (OPERATIONS.includes(targetContent)) {
       // Check for whether a negative number is being created
       // If no negative number is being created, build an equation part
-      if (this.state.currentDisplay.length === 1 && this.state.currentDisplay === '0' && this.equationPieces.length === 0 && targetContent === '-') {
+      if (this.state.totalDisplay.length === 1 && this.state.totalDisplay === '0' && this.equationPieces.length === 0 && targetContent === '-') {
         this.concatUserInput(targetContent);
-      } else if (OPERATIONS.includes(this.state.currentDisplay[-1]) && targetContent === '-') {
+      } else if (OPERATIONS.includes(this.state.totalDisplay[this.state.totalDisplay.length-1]) && targetContent === '-') {
         this.concatUserInput(targetContent);
-      } else if (this.state.currentDisplay.length === 1 && this.state.currentDisplay === '-' && OPERATIONS.includes(targetContent)) {
+      } else if (this.state.totalDisplay.length === 1 && this.state.totalDisplay === '-' && OPERATIONS.includes(targetContent)) {
         // If first user inputs are a minus sign followed by another operator, ignore both and set display back to 0
-        this.setState({currentDisplay: '0'});
+        this.setState({
+          currentDisplay: "0",
+          totalDisplay: "0"
+        });
+        // this.setState({totalDisplay: "0"});
         this.currInputIndex = 0;
       } else {
         this.buildEquationPart(targetContent);
